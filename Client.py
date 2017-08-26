@@ -5,6 +5,7 @@ import pygame
 import pygame.gfxdraw
 import sys
 from Player import Player
+from Board import Board
 
 class Client:
     def __init__(self, name):
@@ -100,15 +101,15 @@ class Client:
             del self.players[name]
 
     def getRect(self, p):
-        width = Player.PLAYER_WIDTH
+        width = Player.WIDTH
         return pygame.Rect(p.x - width // 2, p.y - width // 2, width, width)
 
     def drawPlayers(self):
         self.screen.fill((0,0,0))
         
         for p in self.players.values():
-            pygame.gfxdraw.filled_circle(self.screen, p.x, p.y, Player.PLAYER_WIDTH, p.colour)
-            pygame.gfxdraw.aacircle(self.screen, p.x, p.y, Player.PLAYER_WIDTH, (255,255,255))
+            pygame.gfxdraw.filled_circle(self.screen, p.x, p.y, Player.WIDTH, p.colour)
+            pygame.gfxdraw.aacircle(self.screen, p.x, p.y, Player.WIDTH, (255,255,255))
             pygame.display.update(self.getRect(p))
 
     def handleInput(self):
@@ -130,6 +131,10 @@ class Client:
             p.x += 4
         if keys[pygame.K_LEFT]:
             p.x -= 4
+
+        halfWidth = Player.WIDTH // 2
+        p.x = max(min(p.x, Board.WIDTH - halfWidth), halfWidth)
+        p.y = max(min(p.y, Board.HEIGHT - halfWidth), halfWidth)
 
     def sendState(self):
         if self.name not in self.players:

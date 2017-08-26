@@ -33,8 +33,8 @@ class Server:
 
     def addPlayer(self, client, name):
         randomColour = tuple([random.randrange(100, 255) for _ in range(3)])
-        randomX = random.randrange(800)
-        randomY = random.randrange(600)
+        randomX = random.randrange(Server.WIDTH)
+        randomY = random.randrange(Server.HEIGHT)
 
         self.players[client] = Player(name, randomColour, randomX, randomY)
         self.playerClients[name] = client
@@ -80,8 +80,9 @@ class Server:
                 self.addPlayer(client, response)
                 continue
 
+
             p = response.split(';')[-1]
-            if p[0] != '|' or p[-1] != '|':
+            if len(p) == 0 or p[0] != '|' or p[-1] != '|':
                 continue
 
             p = p.strip('|').split(':')
