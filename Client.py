@@ -1,11 +1,9 @@
 #!/usr/bin/env python3
 import socket
-import select
 import random
 import pygame
 import pygame.gfxdraw
 import sys
-import errno
 from Player import Player
 
 class Client:
@@ -17,20 +15,18 @@ class Client:
 
     def send(self, server, message):
         try:
-            self.server.send(bytes(message, encoding='utf-8'))
+            response = self.server.send(bytes(message, encoding='utf-8'))
         except:
-            return 'send', 'Failed to send {0} to {1}'.format(message, server)
+            return 'send', 'Failed to send message to server'
 
-        return None, None
+        return None, response
 
     def receive(self, server):
         try:
-            response = self.server.recv(1024)
-        except socket.error as e:
-            if e.errno == errno.EAGAIN:
-                return 'none', None
+            response = self.server.recv(1024).decode('utf-8')
+        except:
+            return 'recv', 'Failed to read from server'
 
-        response = response.decode('utf-8')
         if response[:5] == 'Error':
             return 'taken', 'Username has already been taken'
 
@@ -48,32 +44,25 @@ class Client:
         self.send(self.server, self.name)
         err, response = self.receive(self.server)
 
-        if err == 'taken' or err == 'recv':
+        if err == 'taken':
             self.quit(response)
 
     def getState(self):
-        try:
-            readable, _, _ = select.select([self.server], [], [], 0.001)
-        except:
-            return
-
-        if len(readable) == 0:
-            return
-
         err, response = self.receive(self.server)
-        if err == 'closed' or err == 'taken':
+        if err == 'taken':
             self.quit(response)
 
-        if err == 'recv' or err == 'none':
+        if err == 'recv':
             return
 
-        players = list(set(response.split(';')))
         seenPlayers = set()
+        players = response.split(';')
         for player in players:
-            # Minimum size
-            if len(player) < 13:
+            # Check minimum size is achieved, from |x,(x,x,x),x,x|
+            if len(player) < 15:
                 continue
 
+            # Check if start and stop chars exist
             if player[0] != '|' or player[-1] != '|':
                 continue
 
@@ -88,8 +77,6 @@ class Client:
             x = int(x)
             y = int(y)
 
-            seenPlayers.add(name)
-
             if name not in self.players:
                 colourValues = colourValues[1:-1].split(',')
                 colour = tuple([int(x.strip()) for x in colourValues])
@@ -100,6 +87,11 @@ class Client:
                 p.x = x
                 p.y = y
 
+            seenPlayers.add(name)
+
+        self.removeOldPlayers(seenPlayers)
+
+    def removeOldPlayers(self, seenPlayers):
         if len(seenPlayers) == 0:
             return
 
@@ -123,11 +115,11 @@ class Client:
         if self.name not in self.players:
             return
 
-        p = self.players[self.name]
-
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
                 self.running = False
+
+        p = self.players[self.name]
 
         keys = pygame.key.get_pressed()
         if keys[pygame.K_UP]:

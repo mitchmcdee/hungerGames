@@ -12,22 +12,22 @@ class Server:
         self.players = {}
         self.playerClients = {}
 
-    def send(self, server, message):
+    def send(self, client, message):
         try:
-            server.send(bytes(message, encoding='utf-8'))
+            response = client.send(bytes(message, encoding='utf-8'))
         except:
-            return 'send', 'Failed to send {0} to {1}'.format(message, server)
+            return 'send', 'Failed to send message to client'
 
-        return None, None
+        return None, response
 
-    def receive(self, server):
+    def receive(self, client):
         try:
-            response = server.recv(4096).decode('utf-8')
+            response = client.recv(1024).decode('utf-8')
         except:
-            return 'recv', 'Failed to receive from {0}'.format(server)
+            return 'recv', 'Failed to read from client'
 
         if len(response) == 0:
-            return 'closed', '{0} has closed'.format(server)
+            return 'closed', 'Client has closed'
 
         return None, response
 
@@ -35,6 +35,7 @@ class Server:
         randomColour = tuple([random.randrange(100, 255) for _ in range(3)])
         randomX = random.randrange(800)
         randomY = random.randrange(600)
+
         self.players[client] = Player(name, randomColour, randomX, randomY)
         self.playerClients[name] = client
 
@@ -71,17 +72,15 @@ class Server:
 
             if client not in self.players:
                 if response in self.playerClients:
-                    print('{0} tried to join with a non-unique user name'.format(client))
+                    print('Someone tried to join with a non-unique user name')
                     self.send(client, 'Error: User name already taken')
                     continue
 
                 print('{0} has joined'.format(response))
                 self.addPlayer(client, response)
-                self.send(client, 'Welcome ' + response)
                 continue
 
             p = response.split(';')[-1]
-
             if p[0] != '|' or p[-1] != '|':
                 continue
 
@@ -95,8 +94,7 @@ class Server:
             p.y = int(y)
 
     def writeToClients(self, clientList):
-        for client in clientList:
-            self.send(client, self.getStateMessage())
+        [self.send(client, self.getStateMessage()) for client in clientList]
 
     def getClients(self):
         connections, _, _ = select.select([self.server], [], [], 0.015)
