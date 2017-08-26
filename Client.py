@@ -24,7 +24,7 @@ class Client:
 
     def receive(self, server):
         try:
-            response = self.server.recv(512).decode('utf-8')
+            response = self.server.recv(4096).decode('utf-8')
         except:
             return 'recv', 'Failed to receive from {0}'.format(server)
 
@@ -80,8 +80,6 @@ class Client:
             if len(p) != 4:
                 continue
 
-            print('got player ', p)
-
             name, colourValues, x, y  = p
             if len(name) == 0 or len(colourValues) < 7 or len(x) == 0 or len(y) == 0:
                 continue
@@ -95,19 +93,16 @@ class Client:
                 colourValues = colourValues[1:-1].split(',')
                 colour = tuple([int(x.strip()) for x in colourValues])
                 self.players[name] = Player(name, colour, x, y)
-                print('0: ', self.players[name].x, self.players[name].y)
             
             else:
                 p = self.players[name]
                 p.x = x
                 p.y = y
-                print('2: ', p.x, p.y)
 
         if len(seenPlayers) == 0:
             return
 
         deadPlayers = list(self.players.keys() - seenPlayers)
-        print(deadPlayers)
         for name in deadPlayers:
             del self.players[name]
 
@@ -115,7 +110,6 @@ class Client:
         self.screen.fill((0,0,0))
         
         for player in self.players.values():
-            print('1: ', player.x, player.y)
             pygame.gfxdraw.filled_circle(self.screen, player.x, player.y, Player.PLAYER_WIDTH, player.colour)
             pygame.gfxdraw.aacircle(self.screen, player.x, player.y, Player.PLAYER_WIDTH, (255,255,255))
         
@@ -140,8 +134,6 @@ class Client:
             p.x += 7
         if keys[pygame.K_LEFT]:
             p.x -= 7
-
-        print('3: ', p.x, p.y)
 
     def sendState(self):
         if self.name not in self.players:

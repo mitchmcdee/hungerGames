@@ -22,7 +22,7 @@ class Server:
 
     def receive(self, server):
         try:
-            response = server.recv(512).decode('utf-8')
+            response = server.recv(4096).decode('utf-8')
         except:
             return 'recv', 'Failed to receive from {0}'.format(server)
 
@@ -39,7 +39,7 @@ class Server:
         self.playerClients[name] = client
 
     def getStateMessage(self):
-        return ';' + ('').join([player.state() for player in self.players.values()])
+        return ('').join([player.state() for player in self.players.values()])
 
     def removeClient(self, client):
         client.close()
@@ -80,14 +80,14 @@ class Server:
                 self.send(client, 'Welcome ' + response)
                 continue
 
-            if response[0] != '|' or response[-1] != '|':
+            p = response.split(';')[-1]
+
+            if p[0] != '|' or p[-1] != '|':
                 continue
 
-            p = response.strip('|').split(':')
+            p = p.strip('|').split(':')
             if len(p) != 4:
                 continue
-
-            print('received ', p)
 
             name, colourValues, x, y  = p
             p = self.players[client]
