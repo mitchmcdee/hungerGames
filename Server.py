@@ -22,7 +22,7 @@ class Server:
 
     def receive(self, server):
         try:
-            response = server.recv(1024).decode('utf-8')
+            response = server.recv(512).decode('utf-8')
         except:
             return 'recv', 'Failed to receive from {0}'.format(server)
 
@@ -39,7 +39,7 @@ class Server:
         self.playerClients[name] = client
 
     def getStateMessage(self):
-        return (';').join([player.state() for player in self.players.values()])
+        return ';' + ('').join([player.state() for player in self.players.values()])
 
     def removeClient(self, client):
         client.close()
@@ -75,15 +75,19 @@ class Server:
                     self.send(client, 'Error: User name already taken')
                     continue
 
-                print('{0} has joined as {1}'.format(client, response))
+                print('{0} has joined'.format(response))
                 self.addPlayer(client, response)
                 self.send(client, 'Welcome ' + response)
                 continue
 
-            p = response.split(':')
+            if response[0] != '|' or response[-1] != '|':
+                continue
 
+            p = response.strip('|').split(':')
             if len(p) != 4:
                 continue
+
+            print('received ', p)
 
             name, colourValues, x, y  = p
             p = self.players[client]
@@ -94,7 +98,7 @@ class Server:
         for client in clientList:
             self.send(client, self.getStateMessage())
 
-    def process(self):
+    def getClients(self):
         connections, _, _ = select.select([self.server], [], [], 0.015)
 
         for connection in connections:
@@ -104,10 +108,9 @@ class Server:
         try:
             readList, writeList, _ = select.select(self.clients, self.clients, [], 0.015)
         except:
-            return
+            return [], []
 
-        self.readFromClients(readList)
-        self.writeToClients(writeList)
+        return readList, writeList
             
     def run(self):
         self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
@@ -116,7 +119,9 @@ class Server:
         print('Server started on port ' + str(self.server.getsockname()[1]))
 
         while True:
-            self.process()
+            readList, writeList = self.getClients()
+            self.readFromClients(readList)
+            self.writeToClients(writeList)
 
         self.server.close()
 

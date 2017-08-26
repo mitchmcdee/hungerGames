@@ -24,7 +24,7 @@ class Client:
 
     def receive(self, server):
         try:
-            response = self.server.recv(1024).decode('utf-8')
+            response = self.server.recv(512).decode('utf-8')
         except:
             return 'recv', 'Failed to receive from {0}'.format(server)
 
@@ -66,50 +66,66 @@ class Client:
         if err == 'recv':
             return
 
-        players = response.split(';')
+        players = list(set(response.split(';')))
         seenPlayers = set()
         for player in players:
-            p = player.split(':')
+            # Minimum size
+            if len(player) < 13:
+                continue
 
+            if player[0] != '|' or player[-1] != '|':
+                continue
+
+            p = player.strip('|').split(':')
             if len(p) != 4:
                 continue
 
-            name, colourValues, x, y  = p
-            r, g, b = colourValues[1:-1].split(',')
-            colour = (int(r.strip()), int(g.strip()), int(b.strip()))
+            print('got player ', p)
 
-            if name not in self.players:
-                p = Player(name, colour, int(x), int(y))
-                r = pygame.Rect(p.x - Player.PLAYER_WIDTH // 2, p.y - Player.PLAYER_WIDTH // 2, Player.PLAYER_WIDTH, Player.PLAYER_WIDTH)
-                self.players[name] = (p, r)
-            else:
-                p,_ = self.players[name]
-                p.x = int(x)
-                p.y = int(y)
-                r = pygame.Rect(p.x - Player.PLAYER_WIDTH // 2, p.y - Player.PLAYER_WIDTH // 2, Player.PLAYER_WIDTH, Player.PLAYER_WIDTH)
-                self.players[name] = (p, r)
+            name, colourValues, x, y  = p
+            if len(name) == 0 or len(colourValues) < 7 or len(x) == 0 or len(y) == 0:
+                continue
+
+            x = int(x)
+            y = int(y)
 
             seenPlayers.add(name)
+
+            if name not in self.players:
+                colourValues = colourValues[1:-1].split(',')
+                colour = tuple([int(x.strip()) for x in colourValues])
+                self.players[name] = Player(name, colour, x, y)
+                print('0: ', self.players[name].x, self.players[name].y)
+            
+            else:
+                p = self.players[name]
+                p.x = x
+                p.y = y
+                print('2: ', p.x, p.y)
 
         if len(seenPlayers) == 0:
             return
 
         deadPlayers = list(self.players.keys() - seenPlayers)
+        print(deadPlayers)
         for name in deadPlayers:
             del self.players[name]
 
     def drawPlayers(self):
         self.screen.fill((0,0,0))
-        for player,r in self.players.values():
+        
+        for player in self.players.values():
+            print('1: ', player.x, player.y)
             pygame.gfxdraw.filled_circle(self.screen, player.x, player.y, Player.PLAYER_WIDTH, player.colour)
             pygame.gfxdraw.aacircle(self.screen, player.x, player.y, Player.PLAYER_WIDTH, (255,255,255))
-            pygame.display.update(r)
+        
+        pygame.display.update()
 
     def handleInput(self):
         if self.name not in self.players:
             return
 
-        p,r = self.players[self.name]
+        p = self.players[self.name]
 
         for event in pygame.event.get():
             if event.type == pygame.QUIT:
@@ -117,32 +133,31 @@ class Client:
 
         keys = pygame.key.get_pressed()
         if keys[pygame.K_UP]:
-            p.y -= 5
+            p.y -= 7
         if keys[pygame.K_DOWN]:
-            p.y += 5
+            p.y += 7
         if keys[pygame.K_RIGHT]:
-            p.x += 5
+            p.x += 7
         if keys[pygame.K_LEFT]:
-            p.x -= 5
+            p.x -= 7
 
-        r = pygame.Rect(p.x - Player.PLAYER_WIDTH // 2, p.y - Player.PLAYER_WIDTH // 2, Player.PLAYER_WIDTH, Player.PLAYER_WIDTH)
-        self.players[self.name] = (p, r)
+        print('3: ', p.x, p.y)
 
     def sendState(self):
         if self.name not in self.players:
             return
         
-        self.send(self.server, self.players[self.name][0].state())
+        self.send(self.server, self.players[self.name].state())
 
     def run(self, ip, port):
         self.connect(ip, port)
         
         tick = 0
         while self.running:
-            self.getState()     if tick % 20 == 0  else None
+            self.getState()
             self.handleInput()
             self.drawPlayers()
-            self.sendState()    if tick % 20 == 0  else None
+            self.sendState()
 
             tick += 1
 
