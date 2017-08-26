@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
 import socket
+import select
 import random
 import pygame
 import pygame.gfxdraw
@@ -50,6 +51,14 @@ class Client:
             self.quit(response)
 
     def getState(self):
+        try:
+            readable, _, _ = select.select([self.server], [], [], 0.001)
+        except:
+            return
+
+        if len(readable) == 0:
+            return
+
         err, response = self.receive(self.server)
         if err == 'closed' or err == 'taken':
             self.quit(response)
@@ -108,13 +117,13 @@ class Client:
 
         keys = pygame.key.get_pressed()
         if keys[pygame.K_UP]:
-            p.y -= 10
+            p.y -= 5
         if keys[pygame.K_DOWN]:
-            p.y += 10
+            p.y += 5
         if keys[pygame.K_RIGHT]:
-            p.x += 10
+            p.x += 5
         if keys[pygame.K_LEFT]:
-            p.x -= 10
+            p.x -= 5
 
         r = pygame.Rect(p.x - Player.PLAYER_WIDTH // 2, p.y - Player.PLAYER_WIDTH // 2, Player.PLAYER_WIDTH, Player.PLAYER_WIDTH)
         self.players[self.name] = (p, r)
@@ -128,11 +137,14 @@ class Client:
     def run(self, ip, port):
         self.connect(ip, port)
         
+        tick = 0
         while self.running:
-            self.getState()
+            self.getState()     if tick % 20 == 0  else None
             self.handleInput()
             self.drawPlayers()
-            self.sendState()
+            self.sendState()    if tick % 20 == 0  else None
+
+            tick += 1
 
         quit('Shutting down')
 
