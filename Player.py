@@ -2,10 +2,11 @@
 import pygame
 
 class Player:
-    def __init__(self, name, x, y):
+    def __init__(self, name, colour, x, y):
         self.name = name
+        self.colour = colour
         self.x = x
         self.y = y
 
     def state(self):
-        return f'{self.name},{self.x},{self.y}'
+        return f'{self.name}:{self.colour}:{self.x}:{self.y}'

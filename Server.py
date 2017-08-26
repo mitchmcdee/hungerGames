@@ -10,45 +10,33 @@ class Server:
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.clients = []
         self.players = {}
-        self.playerNames = set()
+        self.playerClients = {}
 
     def send(self, server, message):
-        err = None
-        response = None
-        _, writeList, _ = select.select([], [server], [], 0.05)
-
-        if len(writeList) == 0:
-            return 'empty', None
-
         try:
             server.send(bytes(message, encoding='utf-8'))
         except:
-            err = 'send'
-            response = f'Failed to send {message} to {server}'
+            return 'send', f'Failed to send {message} to {server}'
 
-        return err, response
+        return None, None
 
     def receive(self, server):
-        err = None
-        response = None
-        readList, _, _ = select.select([server], [], [], 0.05)
-
-        if len(readList) == 0:
-            return 'empty', None
-
         try:
             response = server.recv(1024).decode('utf-8')
         except:
-            err = 'recv'
-            response = f'Failed to receive from {server}'
+            return 'recv', f'Failed to receive from {server}'
 
-        return err, response
+        if len(response) == 0:
+            return 'closed', f'{server} has closed'
+
+        return None, response
 
     def addPlayer(self, client, name):
+        randomColour = tuple([random.randrange(255) for _ in range(3)])
         randomX = random.randrange(800)
         randomY = random.randrange(600)
-        self.players[client.getpeername()] = Player(name, randomX, randomY)
-        self.playerNames.add(name)
+        self.players[client] = Player(name, randomColour, randomX, randomY)
+        self.playerClients[name] = client
 
     def getStateMessage(self):
         return (';').join([player.state() for player in self.players.values()])
@@ -57,33 +45,54 @@ class Server:
         client.close()
         self.clients.remove(client)
 
+        if client not in self.players:
+            print(f'Removed client: {client}')
+            return
+
+        player = self.players[client]
+        del self.players[client]
+        del self.playerClients[player.name]
+        print(f'Removed client: {client} and player: {player.name}')
+
     def readFromClients(self, clientList):
         for client in clientList:
             err, response = self.receive(client)
-            if err:
-                continue
 
             try:
-                clientName = client.getpeername()
+                client.getpeername()
             except:
+                self.removeClient(client)
                 continue
 
-            if clientName not in self.players:
-                if response in self.playerNames:
-                    print(f'{clientName} tried to join with a non-unique user name')
+            if err == 'closed':
+                self.removeClient(client)
+                continue
+
+            if err == 'recv':
+                continue
+
+            if client not in self.players:
+                if response in self.playerClients:
+                    print(f'{client} tried to join with a non-unique user name')
                     self.send(client, 'Error: User name already taken')
-                    # self.removeClient(client)
                     continue
 
-                print(f'{clientName} has joined as {response}')
+                print(f'{client} has joined as {response}')
                 self.addPlayer(client, response)
                 self.send(client, 'Welcome ' + response)
                 continue
 
-            # read states from players
+            p = response.split(':')
+
+            if len(p) != 4:
+                continue
+
+            name, colourValues, x, y  = p
+            p = self.players[client]
+            p.x = int(x)
+            p.y = int(y)
 
     def writeToClients(self, clientList):
-        print(self.getStateMessage())
         for client in clientList:
             self.send(client, self.getStateMessage())
 
@@ -104,7 +113,7 @@ class Server:
             
     def run(self):
         self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.server.bind(('', 0))
+        self.server.bind(('', 40000))
         self.server.listen()
         print('Running on port ' + str(self.server.getsockname()[1]))
 

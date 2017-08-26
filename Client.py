@@ -10,42 +10,30 @@ class Client:
     def __init__(self, name):
         self.name = name
         self.screen = pygame.display.set_mode((800, 600))
+        self.running = True
         self.players = {}
 
     def send(self, server, message):
-        err = None
-        response = None
-        _, writeList, _ = select.select([], [self.server], [], 0.05)
-
-        if len(writeList) == 0:
-            return 'empty', None
-
         try:
             self.server.send(bytes(message, encoding='utf-8'))
         except:
-            err = 'send'
-            response = f'Failed to send {message} to {server}'
+            return 'send', f'Failed to send {message} to {server}'
 
-        return err, response
+        return None, None
 
     def receive(self, server):
-        err = None
-        response = None
-        readList, _, _ = select.select([self.server], [], [], 0.05)
-
-        if len(readList) == 0:
-            return 'empty', None
-
         try:
             response = self.server.recv(1024).decode('utf-8')
         except:
-            err = 'recv'
-            response = f'Failed to receive from {server}'
+            return 'recv', f'Failed to receive from {server}'
 
-        return err, response
+        if len(response) == 0:
+            return 'closed', f'{server} has closed'
 
-    def randomColour(self):
-        return tuple([random.randrange(255) for _ in range(3)])
+        if response[:5] == 'Error':
+            return 'taken', 'Username has already been taken'
+
+        return None, response
 
     def quit(self, reason):
         print(reason)
@@ -57,57 +45,90 @@ class Client:
         self.server.connect((ip, port))
         self.send(self.server, self.name)
         err, response = self.receive(self.server)
-        if err:
+
+        if err == 'taken' or err == 'recv':
             self.quit(response)
 
     def parseResponse(self, response):
-        if response[:5] == 'Error':
-            self.quit(response)
-
         players = response.split(';')
-        for player in players:
-            p = player.split(',')
 
-            if len(p) > 3:
+        seenPlayers = set()
+        for player in players:
+            p = player.split(':')
+
+            if len(p) != 4:
                 continue
 
-            name, x, y  = p
+            name, colourValues, x, y  = p
+            r, g, b = colourValues[1:-1].split(',')
+            colour = (int(r.strip()), int(g.strip()), int(b.strip()))
+
             if name not in self.players:
-                self.players[name] = Player(name, int(x), int(y))
+                self.players[name] = Player(name, colour, int(x), int(y))
+            else:
+                p = self.players[name]
+                p.x = int(x)
+                p.y = int(y)
+
+            seenPlayers.add(name)
+
+        deadPlayers = list(self.players.keys() - seenPlayers)
+        for name in deadPlayers:
+            del self.players[name]
 
     def drawPlayers(self):
         for player in self.players.values():
-            print(f'drawing {player.name}')
-            pygame.draw.circle(self.screen, self.randomColour(), (player.x, player.y), 10)
+            pygame.draw.circle(self.screen, player.colour, (player.x, player.y), 10)
+
+    def handleInput(self):
+        if self.name not in self.players:
+            return
+
+        p = self.players[self.name]
+
+        for event in pygame.event.get():
+            if event.type == pygame.QUIT:
+                self.running = False
+
+        keys = pygame.key.get_pressed()
+        if keys[pygame.K_UP]:
+            p.y -= 10
+        if keys[pygame.K_DOWN]:
+            p.y += 10
+        if keys[pygame.K_RIGHT]:
+            p.x += 10
+        if keys[pygame.K_LEFT]:
+            p.x -= 10
+
+    def sendState(self):
+        if self.name not in self.players:
+            return
+        
+        self.send(self.server, self.players[self.name].state())
 
     def run(self, ip, port):
         self.connect(ip, port)
         
-        running = True
-        while running:
+        while self.running:
+            self.screen.fill((0,0,0))
             err, response = self.receive(self.server)
-            if err:
+            if err == 'closed' or err == 'taken':
                 self.quit(response)
 
-            if len(response) == 0:
+            if err == 'recv':
                 continue
 
             self.parseResponse(response)
+            self.handleInput()
             self.drawPlayers()
+            self.sendState()
             pygame.display.flip()
 
-            for event in pygame.event.get():
-                if event.type == pygame.QUIT:
-                    running = False
-
-        self.server.close()
+        quit('Shutting down')
 
 if __name__ == '__main__':
-    if len(sys.argv) != 3:
-        print('usage: python3 Client.py `name` `ip:port`')
+    if len(sys.argv) != 2:
+        print('usage: ./Client.py `name`')
         sys.exit(0)
 
-    name = sys.argv[1]
-    ip, port = sys.argv[2].split(':')
-
-    Client(name).run(ip, int(port))
+    Client(sys.argv[1]).run('13.236.0.194', 40000)
