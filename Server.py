@@ -16,7 +16,7 @@ class Server:
         try:
             server.send(bytes(message, encoding='utf-8'))
         except:
-            return 'send', f'Failed to send {message} to {server}'
+            return 'send', 'Failed to send {0} to {1}'.format(message, server)
 
         return None, None
 
@@ -24,10 +24,10 @@ class Server:
         try:
             response = server.recv(1024).decode('utf-8')
         except:
-            return 'recv', f'Failed to receive from {server}'
+            return 'recv', 'Failed to receive from {0}'.format(server)
 
         if len(response) == 0:
-            return 'closed', f'{server} has closed'
+            return 'closed', '{0} has closed'.format(server)
 
         return None, response
 
@@ -46,13 +46,13 @@ class Server:
         self.clients.remove(client)
 
         if client not in self.players:
-            print(f'Removed client: {client}')
+            print('Removed client: {0}'.format(client))
             return
 
         player = self.players[client]
         del self.players[client]
         del self.playerClients[player.name]
-        print(f'Removed client: {client} and player: {player.name}')
+        print('Removed client: {0} and player: {1}'.format(client, player.name))
 
     def readFromClients(self, clientList):
         for client in clientList:
@@ -73,11 +73,11 @@ class Server:
 
             if client not in self.players:
                 if response in self.playerClients:
-                    print(f'{client} tried to join with a non-unique user name')
+                    print('{0} tried to join with a non-unique user name'.format(client))
                     self.send(client, 'Error: User name already taken')
                     continue
 
-                print(f'{client} has joined as {response}')
+                print('{0} has joined as {1}'.format(client, response))
                 self.addPlayer(client, response)
                 self.send(client, 'Welcome ' + response)
                 continue
@@ -97,14 +97,14 @@ class Server:
             self.send(client, self.getStateMessage())
 
     def process(self):
-        connections, _, _ = select.select([self.server], [], [], 0.05)
+        connections, _, _ = select.select([self.server], [], [], 0.02)
 
         for connection in connections:
             client, _ = connection.accept()
             self.clients.append(client)
 
         try:
-            readList, writeList, _ = select.select(self.clients, self.clients, [], 0.05)
+            readList, writeList, _ = select.select(self.clients, self.clients, [], 0.02)
         except:
             return
 

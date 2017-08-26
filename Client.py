@@ -17,7 +17,7 @@ class Client:
         try:
             self.server.send(bytes(message, encoding='utf-8'))
         except:
-            return 'send', f'Failed to send {message} to {server}'
+            return 'send', 'Failed to send {0} to {1}'.format(message, server)
 
         return None, None
 
@@ -25,10 +25,10 @@ class Client:
         try:
             response = self.server.recv(1024).decode('utf-8')
         except:
-            return 'recv', f'Failed to receive from {server}'
+            return 'recv', 'Failed to receive from {0}'.format(server)
 
         if len(response) == 0:
-            return 'closed', f'{server} has closed'
+            return 'closed', '{0} has closed'.format(server)
 
         if response[:5] == 'Error':
             return 'taken', 'Username has already been taken'
@@ -118,10 +118,10 @@ class Client:
             if err == 'recv':
                 continue
 
-            self.parseResponse(response)
             self.handleInput()
-            self.drawPlayers()
             self.sendState()
+            self.parseResponse(response)
+            self.drawPlayers()
             pygame.display.flip()
 
         quit('Shutting down')

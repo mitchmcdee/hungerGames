@@ -9,4 +9,4 @@ class Player:
         self.y = y
 
     def state(self):
-        return f'{self.name}:{self.colour}:{self.x}:{self.y}'
+        return '{0}:{1}:{2}:{3}'.format(self.name, self.colour, self.x, self.y)
