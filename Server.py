@@ -32,7 +32,7 @@ class Server:
         return None, response
 
     def addPlayer(self, client, name):
-        randomColour = tuple([random.randrange(255) for _ in range(3)])
+        randomColour = tuple([random.randrange(100, 255) for _ in range(3)])
         randomX = random.randrange(800)
         randomY = random.randrange(600)
         self.players[client] = Player(name, randomColour, randomX, randomY)
@@ -44,15 +44,13 @@ class Server:
     def removeClient(self, client):
         client.close()
         self.clients.remove(client)
-
-        if client not in self.players:
-            print('Removed client: {0}'.format(client))
-            return
-
-        player = self.players[client]
-        del self.players[client]
-        del self.playerClients[player.name]
-        print('Removed client: {0} and player: {1}'.format(client, player.name))
+        print('Client disconnected')
+        
+        if client in self.players:
+            player = self.players[client]
+            del self.players[client]
+            del self.playerClients[player.name]
+            print('{0} disconnected'.format(player.name))
 
     def readFromClients(self, clientList):
         for client in clientList:
@@ -97,14 +95,14 @@ class Server:
             self.send(client, self.getStateMessage())
 
     def process(self):
-        connections, _, _ = select.select([self.server], [], [], 0.02)
+        connections, _, _ = select.select([self.server], [], [], 0.015)
 
         for connection in connections:
             client, _ = connection.accept()
             self.clients.append(client)
 
         try:
-            readList, writeList, _ = select.select(self.clients, self.clients, [], 0.02)
+            readList, writeList, _ = select.select(self.clients, self.clients, [], 0.015)
         except:
             return
 
@@ -115,7 +113,7 @@ class Server:
         self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.server.bind(('', 40000))
         self.server.listen()
-        print('Running on port ' + str(self.server.getsockname()[1]))
+        print('Server started on port ' + str(self.server.getsockname()[1]))
 
         while True:
             self.process()

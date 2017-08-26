@@ -2,6 +2,8 @@
 import pygame
 
 class Player:
+    PLAYER_WIDTH = 15
+
     def __init__(self, name, colour, x, y):
         self.name = name
         self.colour = colour
