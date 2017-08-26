@@ -5,6 +5,7 @@ import random
 import pygame
 import pygame.gfxdraw
 import sys
+import errno
 from Player import Player
 
 class Client:
@@ -24,13 +25,12 @@ class Client:
 
     def receive(self, server):
         try:
-            response = self.server.recv(4096).decode('utf-8')
-        except:
-            return 'recv', 'Failed to receive from {0}'.format(server)
+            response = self.server.recv(1024)
+        except socket.error as e:
+            if e.errno == errno.EAGAIN:
+                return 'none', None
 
-        if len(response) == 0:
-            return 'closed', '{0} has closed'.format(server)
-
+        response = response.decode('utf-8')
         if response[:5] == 'Error':
             return 'taken', 'Username has already been taken'
 
@@ -44,6 +44,7 @@ class Client:
     def connect(self, ip, port):
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.server.connect((ip, port))
+        self.server.setblocking(False)
         self.send(self.server, self.name)
         err, response = self.receive(self.server)
 
@@ -63,7 +64,7 @@ class Client:
         if err == 'closed' or err == 'taken':
             self.quit(response)
 
-        if err == 'recv':
+        if err == 'recv' or err == 'none':
             return
 
         players = list(set(response.split(';')))
@@ -94,7 +95,7 @@ class Client:
                 colour = tuple([int(x.strip()) for x in colourValues])
                 self.players[name] = Player(name, colour, x, y)
             
-            else:
+            elif name != self.name:
                 p = self.players[name]
                 p.x = x
                 p.y = y
@@ -106,14 +107,17 @@ class Client:
         for name in deadPlayers:
             del self.players[name]
 
+    def getRect(self, p):
+        width = Player.PLAYER_WIDTH
+        return pygame.Rect(p.x - width // 2, p.y - width // 2, width, width)
+
     def drawPlayers(self):
         self.screen.fill((0,0,0))
         
-        for player in self.players.values():
-            pygame.gfxdraw.filled_circle(self.screen, player.x, player.y, Player.PLAYER_WIDTH, player.colour)
-            pygame.gfxdraw.aacircle(self.screen, player.x, player.y, Player.PLAYER_WIDTH, (255,255,255))
-        
-        pygame.display.update()
+        for p in self.players.values():
+            pygame.gfxdraw.filled_circle(self.screen, p.x, p.y, Player.PLAYER_WIDTH, p.colour)
+            pygame.gfxdraw.aacircle(self.screen, p.x, p.y, Player.PLAYER_WIDTH, (255,255,255))
+            pygame.display.update(self.getRect(p))
 
     def handleInput(self):
         if self.name not in self.players:
@@ -127,13 +131,13 @@ class Client:
 
         keys = pygame.key.get_pressed()
         if keys[pygame.K_UP]:
-            p.y -= 7
+            p.y -= 4
         if keys[pygame.K_DOWN]:
-            p.y += 7
+            p.y += 4
         if keys[pygame.K_RIGHT]:
-            p.x += 7
+            p.x += 4
         if keys[pygame.K_LEFT]:
-            p.x -= 7
+            p.x -= 4
 
     def sendState(self):
         if self.name not in self.players:
@@ -144,14 +148,11 @@ class Client:
     def run(self, ip, port):
         self.connect(ip, port)
         
-        tick = 0
         while self.running:
             self.getState()
             self.handleInput()
-            self.drawPlayers()
             self.sendState()
-
-            tick += 1
+            self.drawPlayers()
 
         quit('Shutting down')
 
