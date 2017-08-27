@@ -155,9 +155,13 @@ class Server:
 
                 if not bullet.getRect().colliderect(player.getRect()):
                     continue
+                    
+                deadBullets.append(bullet)
+
+                if player.name == 'GODMODE':
+                    continue
                 
                 player.damage(16)
-                deadBullets.append(bullet)
 
         [self.bullets.remove(bullet) for bullet in deadBullets]
 
