@@ -3,12 +3,23 @@ import socket
 import select
 import pygame
 import random
+import numpy as np
 from Player import Player
+from Bullet import Bullet
+
+def angleBetween(p1, p2):
+    ang1 = np.arctan2(*p1[::-1])
+    ang2 = np.arctan2(*p2[::-1])
+    return int(np.rad2deg((ang1 - ang2) % (2 * np.pi)))
 
 class Server:
+    WIDTH = 800
+    HEIGHT = 600
+
     def __init__(self):
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
         self.clients = []
+        self.bullets = []
         self.players = {}
         self.playerClients = {}
 
@@ -36,11 +47,13 @@ class Server:
         randomX = random.randrange(Server.WIDTH)
         randomY = random.randrange(Server.HEIGHT)
 
-        self.players[client] = Player(name, randomColour, randomX, randomY)
+        self.players[client] = Player(name, 100, randomColour, randomX, randomY)
         self.playerClients[name] = client
 
     def getStateMessage(self):
-        return ('').join([player.state() for player in self.players.values()])
+        message = ('').join([player.state() for player in self.players.values()])
+        message += ('').join([bullet.state() for bullet in self.bullets])
+        return message
 
     def removeClient(self, client):
         client.close()
@@ -71,28 +84,46 @@ class Server:
                 continue
 
             if client not in self.players:
-                if response in self.playerClients:
+                name = response
+                if name in self.playerClients:
                     print('Someone tried to join with a non-unique user name')
                     self.send(client, 'Error: User name already taken')
                     continue
 
-                print('{0} has joined'.format(response))
-                self.addPlayer(client, response)
+                print('{0} has joined'.format(name))
+                self.addPlayer(client, name)
                 continue
 
-
-            p = response.split(';')[-1]
+            r = response.split(';')
+            p = r[-1] # Player (if any)
+            b = r[-2] # Bullet (if any)
             if len(p) == 0 or p[0] != '|' or p[-1] != '|':
                 continue
 
             p = p.strip('|').split(':')
-            if len(p) != 4:
+            if len(p) != 5:
                 continue
 
-            name, colourValues, x, y  = p
+            name, hp, colourValues, x, y  = p
             p = self.players[client]
             p.x = int(x)
             p.y = int(y)
+
+            if len(b) == 0 or b[0] != '(' or b[-1] != ')':
+                continue
+
+            b = b[1:-1].replace(' ','').split(',')
+            if len(b) != 5:
+                continue
+
+            owner = b[0].strip('\'')
+            x = int(b[1])
+            y = int(b[2])
+            pointA = (x, y)
+            pointB = (int(b[3]), int(b[4]))
+            angle = angleBetween(pointA, pointB)
+
+            self.bullets.append(Bullet(owner, x, y, angle))
 
     def writeToClients(self, clientList):
         [self.send(client, self.getStateMessage()) for client in clientList]
@@ -111,6 +142,32 @@ class Server:
 
         return readList, writeList
             
+    def tickBullets(self):
+        [bullet.tick() for bullet in self.bullets]
+
+    def checkCollisions(self):
+        deadPlayers = []
+        deadBullets = []
+
+        for bullet in self.bullets:
+            if bullet.x < 0 or bullet.y < 0 or bullet.x > Server.WIDTH or bullet.y > Server.HEIGHT:
+                deadBullets.append(bullet)
+                continue
+
+            for player in self.players.values():
+                if bullet.owner == player.name:
+                    continue
+
+                if not bullet.getRect().colliderect(player.getRect()):
+                    continue
+                
+                player.damage(9)
+                if player.hp <= 0:
+                    deadPlayers.append(player)
+
+        [self.bullets.remove(bullet) for bullet in deadBullets]
+        [self.removeClient(self.playerClients[player.name]) for player in deadPlayers]
+
     def run(self):
         self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
         self.server.bind(('', 40000))
@@ -121,6 +178,8 @@ class Server:
             readList, writeList = self.getClients()
             self.readFromClients(readList)
             self.writeToClients(writeList)
+            self.tickBullets()
+            self.checkCollisions()
 
         self.server.close()
 
