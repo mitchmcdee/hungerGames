@@ -37,7 +37,7 @@ class Server:
         return None, response
 
     def addPlayer(self, client, name):
-        randomColour = tuple([random.randrange(100, 255) for _ in range(3)])
+        randomColour = tuple([random.randrange(50, 200) for _ in range(3)])
         randomX = random.randrange(Server.WIDTH)
         randomY = random.randrange(Server.HEIGHT)
 
@@ -125,14 +125,14 @@ class Server:
         [self.send(client, self.getStateMessage()) for client in clientList]
 
     def getClients(self):
-        connections, _, _ = select.select([self.server], [], [], 0.015)
+        connections, _, _ = select.select([self.server], [], [], 0.01)
 
         for connection in connections:
             client, _ = connection.accept()
             self.clients.append(client)
 
         try:
-            readList, writeList, _ = select.select(self.clients, self.clients, [], 0.015)
+            readList, writeList, _ = select.select(self.clients, self.clients, [], 0.01)
         except:
             return [], []
 
@@ -163,7 +163,7 @@ class Server:
 
     def run(self):
         self.server.setsockopt(socket.SOL_SOCKET, socket.SO_REUSEADDR, 1)
-        self.server.bind(('', 40000))
+        self.server.bind(('', 12345))
         self.server.listen()
         print('Server started on port ' + str(self.server.getsockname()[1]))
 

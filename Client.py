@@ -21,6 +21,7 @@ class Client:
         self.running = True
         self.players = {}
         self.bullets = {}
+        self.bulletCount = 0
         self.bulletFired = False
 
     def send(self, server, message):
@@ -85,7 +86,7 @@ class Client:
                 y = int(y)
                 angle = float(angle)
 
-                self.bullets[uid] = (x, y)
+                self.bullets[uid] = (name, x, y)
                 seenBullets.add(uid)
                 continue
 
@@ -134,6 +135,9 @@ class Client:
 
         deadBullets = list(self.bullets.keys() - seenBullets)
         for uid in deadBullets:
+            if self.bullets[uid][0] == self.name:
+                self.bulletCount -= 1
+
             del self.bullets[uid]
 
     def removeOldPlayers(self, seenPlayers):
@@ -145,8 +149,10 @@ class Client:
             del self.players[name]
 
     def drawSprites(self):
-        for x,y in self.bullets.values():
-            pygame.gfxdraw.filled_circle(self.screen, x, y, Bullet.WIDTH // 2, (255,255,255))
+        s = pygame.Surface((Bullet.WIDTH, Bullet.WIDTH))
+        pygame.draw.circle(s, (255,255,255), (Bullet.WIDTH // 2, Bullet.WIDTH // 2), Bullet.WIDTH // 2)
+        for name,x,y in self.bullets.values():
+            self.screen.blit(s, (x,y))
 
         font = pygame.font.SysFont("arial", 15)
         for p in self.players.values():
@@ -199,9 +205,14 @@ class Client:
 
         self.bulletFired = False
 
+        if self.bulletCount == Bullet.MAX_BULLETS:
+            return ''
+
         p = self.players[self.name]
         x,y = pygame.mouse.get_pos()
         angle = angleBetween((p.x, p.y), (x,y))
+
+        self.bulletCount += 1
 
         return str((random.randrange(sys.maxsize),self.name,p.x,p.y,angle))
 
@@ -214,9 +225,12 @@ class Client:
     def run(self, ip, port):
         self.connect(ip, port)
         pygame.init()
+        background = pygame.Surface(self.screen.get_size())
+        background.fill((0,0,0))
+        background = background.convert()
         
         while self.running:
-            self.screen.fill((0,0,0))
+            self.screen.blit(background, (0,0))
 
             self.getState()
             self.checkAlive()
@@ -233,4 +247,4 @@ if __name__ == '__main__':
         print('usage: ./Client.py `name`')
         sys.exit(0)
 
-    Client(sys.argv[1]).run('13.236.0.194', 40000)
+    Client(sys.argv[1]).run('13.236.0.194', 12345)
