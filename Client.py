@@ -4,7 +4,7 @@ import random
 import pygame
 import pygame.gfxdraw
 import sys
-from math import atan2, degrees
+from math import atan2
 from Player import Player
 from Bullet import Bullet
 
@@ -148,9 +148,10 @@ class Client:
         for x,y in self.bullets.values():
             pygame.gfxdraw.filled_circle(self.screen, x, y, Bullet.WIDTH // 2, (255,255,255))
 
-        font = pygame.font.SysFont("calibri", 20)
+        font = pygame.font.SysFont("arial", 15)
         for p in self.players.values():
-            pygame.gfxdraw.filled_circle(self.screen, p.x, p.y, Player.WIDTH // 2, p.colour)
+            pygame.gfxdraw.filled_circle(self.screen, p.x, p.y, Player.WIDTH // 2, (255,255,255))
+            pygame.gfxdraw.filled_circle(self.screen, p.x, p.y, int(Player.WIDTH / 2.4), p.colour)
             pygame.gfxdraw.aacircle(self.screen, p.x, p.y, Player.WIDTH // 2, (255,255,255))
 
             healthWidth = int(Player.WIDTH * 2 * p.hp / 100.0)
@@ -162,7 +163,7 @@ class Client:
             pygame.gfxdraw.filled_polygon(self.screen, healthPoints, (0,200,0))
             pygame.gfxdraw.aapolygon(self.screen, healthPoints, (255,255,255))
 
-            label = font.render(p.name.upper(), False, (255,255,0))
+            label = font.render(p.name.upper(), True, (255,255,0))
             w,h = pygame.Surface.get_size(label)
             self.screen.blit(label, (p.x - w // 2, p.y - Player.WIDTH - h // 2))
 
