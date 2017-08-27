@@ -156,7 +156,7 @@ class Server:
                 if not bullet.getRect().colliderect(player.getRect()):
                     continue
                 
-                player.damage(9)
+                player.damage(16)
                 deadBullets.append(bullet)
 
         [self.bullets.remove(bullet) for bullet in deadBullets]

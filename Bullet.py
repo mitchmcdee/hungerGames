@@ -5,7 +5,7 @@ from math import cos, sin
 class Bullet:
     WIDTH = 10
     SPEED = 5.0
-    MAX_BULLETS = 5
+    MAX_BULLETS = 3
 
     def __init__(self, uid, owner, x, y, angle):
         self.uid = uid
