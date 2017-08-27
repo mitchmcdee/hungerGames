@@ -9,7 +9,7 @@ from Player import Player
 from Bullet import Bullet
 
 def angleBetween(p1, p2):
-    return int(degrees(atan2(p2[1]-p1[1], p2[0]-p1[0])))
+    return atan2(p2[1]-p1[1], p2[0]-p1[0])
 
 class Client:
     WIDTH = 800
@@ -83,9 +83,9 @@ class Client:
                 uid = int(uid)
                 x = int(x)
                 y = int(y)
-                angle = int(angle)
+                angle = float(angle)
 
-                self.bullets[uid] = Bullet(uid, name, x, y, angle)
+                self.bullets[uid] = (x, y)
                 seenBullets.add(uid)
                 continue
 
@@ -145,8 +145,8 @@ class Client:
             del self.players[name]
 
     def drawSprites(self):
-        for b in self.bullets.values():
-            pygame.gfxdraw.filled_circle(self.screen, int(b.x), int(b.y), Bullet.WIDTH, (255,255,255))
+        for x,y in self.bullets.values():
+            pygame.gfxdraw.filled_circle(self.screen, x, y, Bullet.WIDTH, (255,255,255))
 
         font = pygame.font.SysFont("arial", 12)
         for p in self.players.values():

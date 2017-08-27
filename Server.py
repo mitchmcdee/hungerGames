@@ -117,7 +117,7 @@ class Server:
             owner = b[1].strip('\'')
             x = int(b[2])
             y = int(b[3])
-            angle = int(b[4])
+            angle = float(b[4])
 
             self.bullets.append(Bullet(uid, owner, x, y, angle))
 

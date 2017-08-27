@@ -7,6 +7,8 @@ class Bullet:
     SPEED = 3.0
 
     def __init__(self, uid, owner, x, y, angle):
+        print(x, y, angle)
+
         self.uid = uid
         self.owner = owner
         self.x = x
@@ -14,8 +16,9 @@ class Bullet:
         self.angle = angle
 
     def tick(self):
+        print(self.angle)
         self.x += cos(self.angle) * Bullet.SPEED
-        self.y -= sin(self.angle) * Bullet.SPEED
+        self.y += sin(self.angle) * Bullet.SPEED
 
     def getRect(self):
         return pygame.Rect(self.x - Bullet.WIDTH // 2, self.y - Bullet.WIDTH // 2, Bullet.WIDTH, Bullet.WIDTH)
