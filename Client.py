@@ -53,10 +53,15 @@ class Client:
         self.server.connect((ip, port))
         self.server.setblocking(False)
         self.send(self.server, self.name)
-        err, response = self.receive(self.server)
+        
+        while True:
+            err, response = self.receive(self.server)
 
-        if err == 'taken':
-            self.quit(response)
+            if err == 'taken':
+                self.quit(response)
+
+            if err != 'recv':
+                break
 
     def getState(self):
         err, response = self.receive(self.server)
