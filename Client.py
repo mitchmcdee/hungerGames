@@ -85,8 +85,6 @@ class Client:
                 y = int(y)
                 angle = int(angle)
 
-                print('added bullet ', x, y, angle)
-
                 self.bullets[uid] = Bullet(uid, name, x, y, angle)
                 seenBullets.add(uid)
                 continue
@@ -148,7 +146,7 @@ class Client:
 
     def drawSprites(self):
         for b in self.bullets.values():
-            pygame.gfxdraw.filled_circle(self.screen, b.x, b.y, Bullet.WIDTH, (255,255,255))
+            pygame.gfxdraw.filled_circle(self.screen, int(b.x), int(b.y), Bullet.WIDTH, (255,255,255))
 
         font = pygame.font.SysFont("arial", 12)
         for p in self.players.values():
@@ -203,7 +201,6 @@ class Client:
         x,y = pygame.mouse.get_pos()
         angle = angleBetween((p.x, p.y), (x,y))
 
-        print((p.x, p.y), (x, y), angle)
         return str((random.randrange(sys.maxsize),self.name,p.x,p.y,angle))
 
     def sendState(self):

@@ -89,7 +89,9 @@ class Server:
                 continue
 
             r = response.split(';')
-            print(r)
+            if len(r) < 2:
+                continue
+
             p = r[-1] # Player (if any)
             b = r[-2] # Bullet (if any)
             if len(p) == 0 or p[0] != '|' or p[-1] != '|':
@@ -116,8 +118,6 @@ class Server:
             x = int(b[2])
             y = int(b[3])
             angle = int(b[4])
-
-            print('added bullet ', x,y,angle)
 
             self.bullets.append(Bullet(uid, owner, x, y, angle))
 
