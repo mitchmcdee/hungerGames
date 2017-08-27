@@ -7,8 +7,8 @@ from Player import Player
 from Bullet import Bullet
 
 class Server:
-    WIDTH = 800
-    HEIGHT = 600
+    WIDTH = 1280
+    HEIGHT = 720
 
     def __init__(self):
         self.server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)

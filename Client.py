@@ -12,12 +12,12 @@ def angleBetween(p1, p2):
     return atan2(p2[1]-p1[1], p2[0]-p1[0])
 
 class Client:
-    WIDTH = 800
-    HEIGHT = 600
+    WIDTH = 1280
+    HEIGHT = 720
 
     def __init__(self, name):
         self.name = name
-        self.screen = pygame.display.set_mode((Client.WIDTH, Client.HEIGHT))
+        self.screen = pygame.display.set_mode((Client.WIDTH, Client.HEIGHT), pygame.FULLSCREEN)
         self.running = True
         self.players = {}
         self.bullets = {}
@@ -85,6 +85,10 @@ class Client:
                 x = int(x)
                 y = int(y)
                 angle = float(angle)
+
+
+                if name == self.name and uid not in self.bullets:
+                    self.bulletCount += 1
 
                 self.bullets[uid] = (name, x, y)
                 seenBullets.add(uid)
@@ -178,7 +182,7 @@ class Client:
             return
 
         for event in pygame.event.get():
-            if event.type == pygame.QUIT:
+            if event.type == pygame.QUIT or (event.type == pygame.KEYDOWN and event.key == pygame.K_ESCAPE):
                 self.running = False
             if event.type == pygame.MOUSEBUTTONDOWN:
                 self.bulletFired = True
@@ -205,14 +209,12 @@ class Client:
 
         self.bulletFired = False
 
-        if self.bulletCount == Bullet.MAX_BULLETS:
+        if self.bulletCount >= Bullet.MAX_BULLETS:
             return ''
 
         p = self.players[self.name]
         x,y = pygame.mouse.get_pos()
         angle = angleBetween((p.x, p.y), (x,y))
-
-        self.bulletCount += 1
 
         return str((random.randrange(sys.maxsize),self.name,p.x,p.y,angle))
 
@@ -247,4 +249,4 @@ if __name__ == '__main__':
         print('usage: ./Client.py `name`')
         sys.exit(0)
 
-    Client(sys.argv[1]).run('13.236.0.194', 12345)
+    Client(sys.argv[1]).run('52.65.5.173', 12345)
