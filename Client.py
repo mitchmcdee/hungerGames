@@ -4,8 +4,12 @@ import random
 import pygame
 import pygame.gfxdraw
 import sys
+from math import atan2, degrees
 from Player import Player
 from Bullet import Bullet
+
+def angleBetween(p1, p2):
+    return int(degrees(atan2(p2[1]-p1[1], p2[0]-p1[0])))
 
 class Client:
     WIDTH = 800
@@ -16,7 +20,7 @@ class Client:
         self.screen = pygame.display.set_mode((Client.WIDTH, Client.HEIGHT))
         self.running = True
         self.players = {}
-        self.bullets = []
+        self.bullets = {}
         self.bulletFired = False
 
     def send(self, server, message):
@@ -62,27 +66,29 @@ class Client:
             return
 
         seenPlayers = set()
-        self.bullets = []
+        seenBullets = set()
         for response in response.split(';'):
             if len(response) < 7:
                 continue
 
             if response[0] == '/' and response[-1] == '/':
-
                 b = response.strip('/').split(':')
-                if len(b) != 4:
+                if len(b) != 5:
                     continue
 
-                name, x, y, angle  = b
-                if len(name) == 0 or len(x) == 0 or len(y) == 0:
+                uid, name, x, y, angle = b
+                if len(uid) == 0 or len(name) == 0 or len(x) == 0 or len(y) == 0:
                     continue
 
-                print('added bullet!')
+                uid = int(uid)
                 x = int(x)
                 y = int(y)
                 angle = int(angle)
 
-                self.bullets.append(Bullet(name, x, y, angle))
+                print('added bullet ', x, y, angle)
+
+                self.bullets[uid] = Bullet(uid, name, x, y, angle)
+                seenBullets.add(uid)
                 continue
 
             # Check if start and stop chars exist
@@ -114,11 +120,23 @@ class Client:
             self.players[name].hp = hp
             seenPlayers.add(name)
 
+        self.removeOldBullets(seenBullets)
         self.removeOldPlayers(seenPlayers)
 
     def checkAlive(self):
+        if self.name not in self.players:
+            return
+
         if self.players[self.name].hp <= 0:
             self.quit('You died! Rejoin the server to resume playing')
+
+    def removeOldBullets(self, seenBullets):
+        if len(seenBullets) == 0:
+            return
+
+        deadBullets = list(self.bullets.keys() - seenBullets)
+        for uid in deadBullets:
+            del self.bullets[uid]
 
     def removeOldPlayers(self, seenPlayers):
         if len(seenPlayers) == 0:
@@ -128,8 +146,9 @@ class Client:
         for name in deadPlayers:
             del self.players[name]
 
-    def drawPlayers(self):
-        self.screen.fill((0,0,0))
+    def drawSprites(self):
+        for b in self.bullets.values():
+            pygame.gfxdraw.filled_circle(self.screen, b.x, b.y, Bullet.WIDTH, (255,255,255))
 
         font = pygame.font.SysFont("arial", 12)
         for p in self.players.values():
@@ -148,14 +167,6 @@ class Client:
             w,h = pygame.Surface.get_size(label)
             self.screen.blit(label, (p.x - w // 2, p.y - int(Player.WIDTH * 5 / 2) - h // 2))
 
-            pygame.display.update(p.getRect())
-
-    def drawBullets(self):
-        for b in self.bullets:
-            pygame.gfxdraw.filled_circle(self.screen, b.x, b.y, Bullet.WIDTH, (255,255,255))
-            pygame.display.update(b.getRect())
-
-
     def handleInput(self):
         if self.name not in self.players:
             return
@@ -169,14 +180,14 @@ class Client:
         p = self.players[self.name]
 
         keys = pygame.key.get_pressed()
-        if keys[pygame.K_UP]:
+        if keys[pygame.K_w]:
             p.y -= 4
-        if keys[pygame.K_DOWN]:
-            p.y += 4
-        if keys[pygame.K_RIGHT]:
-            p.x += 4
-        if keys[pygame.K_LEFT]:
+        if keys[pygame.K_a]:
             p.x -= 4
+        if keys[pygame.K_s]:
+            p.y += 4
+        if keys[pygame.K_d]:
+            p.x += 4
 
         halfWidth = Player.WIDTH // 2
         p.x = max(min(p.x, Client.WIDTH - halfWidth), halfWidth)
@@ -190,8 +201,10 @@ class Client:
 
         p = self.players[self.name]
         x,y = pygame.mouse.get_pos()
+        angle = angleBetween((p.x, p.y), (x,y))
 
-        return str((self.name,p.x,p.y,x,y))
+        print((p.x, p.y), (x, y), angle)
+        return str((random.randrange(sys.maxsize),self.name,p.x,p.y,angle))
 
     def sendState(self):
         if self.name not in self.players:
@@ -204,12 +217,15 @@ class Client:
         pygame.init()
         
         while self.running:
+            self.screen.fill((0,0,0))
+
             self.getState()
             self.checkAlive()
             self.handleInput()
             self.sendState()
-            self.drawPlayers()
-            self.drawBullets()
+            self.drawSprites()
+
+            pygame.display.update()
 
         quit('Shutting down')
 

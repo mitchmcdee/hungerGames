@@ -4,9 +4,10 @@ from math import cos, sin
 
 class Bullet:
     WIDTH = 5
-    SPEED = 2
+    SPEED = 3
 
-    def __init__(self, owner, x, y, angle):
+    def __init__(self, uid, owner, x, y, angle):
+        self.uid = uid
         self.owner = owner
         self.x = x
         self.y = y
@@ -20,4 +21,4 @@ class Bullet:
         return pygame.Rect(self.x - Bullet.WIDTH // 2, self.y - Bullet.WIDTH // 2, Bullet.WIDTH, Bullet.WIDTH)
 
     def state(self):
-        return ';/{0}:{1}:{2}:{3}/'.format(self.owner, self.x, self.y, self.angle)
+        return ';/{0}:{1}:{2}:{3}:{4}/'.format(self.uid, self.owner, self.x, self.y, self.angle)
