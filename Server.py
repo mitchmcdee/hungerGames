@@ -27,7 +27,7 @@ class Server:
 
     def receive(self, client):
         try:
-            response = client.recv(1024).decode('utf-8')
+            response = client.recv(8192).decode('utf-8')
         except:
             return 'recv', 'Failed to read from client'
 
