@@ -157,6 +157,7 @@ class Server:
                     continue
                 
                 player.damage(9)
+                deadBullets.append(bullet)
 
         [self.bullets.remove(bullet) for bullet in deadBullets]
 

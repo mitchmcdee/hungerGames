@@ -146,24 +146,25 @@ class Client:
 
     def drawSprites(self):
         for x,y in self.bullets.values():
-            pygame.gfxdraw.filled_circle(self.screen, x, y, Bullet.WIDTH, (255,255,255))
+            pygame.gfxdraw.filled_circle(self.screen, x, y, Bullet.WIDTH // 2, (255,255,255))
 
-        font = pygame.font.SysFont("arial", 12)
+        font = pygame.font.SysFont("calibri", 20)
         for p in self.players.values():
-            pygame.gfxdraw.filled_circle(self.screen, p.x, p.y, Player.WIDTH, p.colour)
-            pygame.gfxdraw.aacircle(self.screen, p.x, p.y, Player.WIDTH, (255,255,255))
+            pygame.gfxdraw.filled_circle(self.screen, p.x, p.y, Player.WIDTH // 2, p.colour)
+            pygame.gfxdraw.aacircle(self.screen, p.x, p.y, Player.WIDTH // 2, (255,255,255))
 
             healthWidth = int(Player.WIDTH * 2 * p.hp / 100.0)
             healthHeight = 5
-            healthPoints = [(p.x - Player.WIDTH, p.y - Player.WIDTH * 2), (p.x - Player.WIDTH, p.y - Player.WIDTH * 2 + healthHeight),
-                            (p.x - Player.WIDTH + healthWidth, p.y - Player.WIDTH * 2 + healthHeight), (p.x - Player.WIDTH + healthWidth, p.y - Player.WIDTH * 2)]
+            healthPadding = 23
+            healthPoints = [(p.x - Player.WIDTH, p.y - healthPadding), (p.x - Player.WIDTH, p.y + healthHeight - healthPadding),
+                            (p.x - Player.WIDTH + healthWidth, p.y + healthHeight - healthPadding), (p.x - Player.WIDTH + healthWidth, p.y - healthPadding)]
 
             pygame.gfxdraw.filled_polygon(self.screen, healthPoints, (0,200,0))
             pygame.gfxdraw.aapolygon(self.screen, healthPoints, (255,255,255))
 
-            label = font.render(p.name.upper(), 1, (255,255,0))
+            label = font.render(p.name.upper(), False, (255,255,0))
             w,h = pygame.Surface.get_size(label)
-            self.screen.blit(label, (p.x - w // 2, p.y - int(Player.WIDTH * 5 / 2) - h // 2))
+            self.screen.blit(label, (p.x - w // 2, p.y - Player.WIDTH - h // 2))
 
     def handleInput(self):
         if self.name not in self.players:

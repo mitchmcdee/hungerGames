@@ -3,7 +3,7 @@ import pygame
 from math import cos, sin
 
 class Bullet:
-    WIDTH = 5
+    WIDTH = 10
     SPEED = 3.0
 
     def __init__(self, uid, owner, x, y, angle):

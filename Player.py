@@ -2,7 +2,7 @@
 import pygame
 
 class Player:
-    WIDTH = 15
+    WIDTH = 30
 
     def __init__(self, name, hp, colour, x, y):
         self.name = name
@@ -12,7 +12,7 @@ class Player:
         self.y = y
 
     def damage(self, damage):
-        self.hp -= damage
+        self.hp = max(0, self.hp - damage)
 
     def getRect(self):
         return pygame.Rect(self.x - Player.WIDTH // 2, self.y - Player.WIDTH // 2, Player.WIDTH, Player.WIDTH)
