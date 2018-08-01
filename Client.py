@@ -17,7 +17,7 @@ class Client:
 
     def __init__(self, name):
         self.name = name
-        self.screen = pygame.display.set_mode((Client.WIDTH, Client.HEIGHT), pygame.FULLSCREEN)
+        self.screen = pygame.display.set_mode((Client.WIDTH, Client.HEIGHT), pygame.DOUBLEBUF | pygame.HWSURFACE)
         self.running = True
         self.players = {}
         self.bullets = {}
@@ -235,6 +235,8 @@ class Client:
         background = pygame.Surface(self.screen.get_size())
         background.fill((0,0,0))
         background = background.convert()
+
+        clock = pygame.time.Clock()
         
         while self.running:
             self.screen.blit(background, (0,0))
@@ -246,6 +248,9 @@ class Client:
             self.drawSprites()
 
             pygame.display.update()
+
+            clock.tick(60)
+            print(clock.get_fps())
 
         quit('Shutting down')
 
